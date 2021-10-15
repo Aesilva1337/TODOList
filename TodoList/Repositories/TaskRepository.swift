@@ -8,6 +8,7 @@
 import Foundation
 import FirebaseFirestore
 import FirebaseFirestoreSwift
+import Firebase
 
 class TaskRepository: ObservableObject {
     let db = Firestore.firestore()
@@ -19,8 +20,10 @@ class TaskRepository: ObservableObject {
     }
     
     func loadData() {
+        let userId = Auth.auth().currentUser?.uid
         db.collection("tasks")
             .order(by: "createdTime")
+            .whereField("userId", isEqualTo: userId ?? "")
             .addSnapshotListener { (querySnapshot, error) in
             if let querySnapshot = querySnapshot {
                 self.tasks = querySnapshot.documents.compactMap { document in
@@ -32,7 +35,9 @@ class TaskRepository: ObservableObject {
     
     func addTask(_ task: Task) {
         do {
-            let _ = try db.collection("tasks").addDocument(from: task)
+            var taskToAdd = task
+            taskToAdd.userId = Auth.auth().currentUser?.uid
+            let _ = try db.collection("tasks").addDocument(from: taskToAdd)
         } catch {
             fatalError("Error \(error.localizedDescription)")
         }
